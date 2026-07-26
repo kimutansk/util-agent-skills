@@ -1,16 +1,21 @@
 ---
 name: claude-md-audit
-description: Classify every rule in a CLAUDE.md (or a rules/skill file) by whether it is worth testing for redundancy, and report which rules are safe deletion candidates. Read-only.
+description: Use when auditing a CLAUDE.md, rules file, or SKILL.md to identify rules whose deletion effects should be tested before removal. Read-only.
 disable-model-invocation: true
-argument-hint: [path-to-file]
-allowed-tools: Read Grep Glob
+argument-hint: <model-id> [path-to-file]
+arguments:
+  - model
+  - path
+allowed-tools: Read Grep Glob Bash(claude --version)
 ---
 
 # CLAUDE.md audit (Phase 1: triage)
 
 ## Environment
 
-- Claude Code version: !`claude --version 2>/dev/null || echo "unknown"`
+- Claude Code version: !`claude --version`
+- Model: $model
+- Effort: ${CLAUDE_EFFORT}
 
 ## What this does
 
@@ -41,9 +46,12 @@ evidence is the only admissible evidence, and gathering it is Phase 2's job.
 
 ## Procedure
 
-### 1. Resolve the target
+### 1. Validate the model and resolve the target
 
-Use `$ARGUMENTS` if given. Otherwise look for, in order: `./CLAUDE.md`,
+`$model` is required. If it is empty, stop and tell the user to check `/status`
+and invoke `/claude-md-audit <model-id> [path-to-file]` again.
+
+Use `$path` if given. Otherwise look for, in order: `./CLAUDE.md`,
 `./.claude/rules/*.md`, `./.claude/skills/*/SKILL.md`. If several candidates
 exist and none was named, list them and ask which to audit rather than guessing.
 
@@ -71,11 +79,12 @@ error here with real consequences.
 | C | Guard | Prevents an outcome that cannot be undone | Skip — keep |
 
 **Class B — local fact.** Ask: could a competent engineer derive this from the
-repository alone? Filenames, internal invariants, "the staging bucket is X",
-"table Y is append-only because of downstream Z" — none of this is inferable, so
-ablation will always show an effect. Testing it wastes runs to confirm the
-obvious. Keep it, and instead check whether it is still *true*: stale local facts
-are worse than absent ones, because they are stated with confidence.
+repository alone? Operational meanings and constraints that are not recorded in
+code or configuration — "the staging bucket is X", "table Y is append-only
+because downstream Z depends on it" — are not inferable, so ablation will always
+show an effect. Testing them wastes runs to confirm the obvious. Keep them, and
+instead check whether they are still *true*: stale local facts are worse than
+absent ones, because they are stated with confidence.
 
 **Class C — guard.** Ask: if this rule were ignored, could the result be reverted
 with `git revert` or an equivalent? If no — data loss, a published artifact, an
@@ -100,7 +109,8 @@ For each Class A rule, record two things the user will need later:
 - **Testability** — can its effect be observed in the output of a single prompt?
   A rule about commit message format is observable. "Think carefully before
   refactoring" is not, and should be flagged as untestable rather than being
-  handed to Phase 2 as if it were.
+  handed to Phase 2 as if it were. Use exactly **Testable**, **Conditional**, or
+  **Untestable** so the summary counts can be reconciled with the table.
 - **Probe sketch** — one sentence describing the task that would expose the rule
   if it is doing work. Probe design is the real bottleneck in Phase 2, so
   capturing the idea here, while the rule's intent is in view, saves effort later.
@@ -112,15 +122,17 @@ Use this structure:
 ```markdown
 # CLAUDE.md audit — <path>
 
-Audited against Claude Code <version>, model <model>.
-Findings are specific to this combination and should be re-run after either changes.
+Audited against Claude Code <version>, model <model>, effort <effort>.
+Findings are specific to this combination and should be re-run after the Claude
+Code version, model, or effort changes.
 
 ## Summary
-<N> rules: <a> convention (testable), <b> local fact, <c> guard.
+<N> rules: <a> conventions (<t> testable, <conditional> conditional,
+<u> untestable), <b> local facts, <c> guards.
 <M> lines of non-directive content.
 
 ## Class A — convention (ablation candidates)
-| Line | Rule | Testable | Probe sketch |
+| Line | Rule | Status | Probe sketch |
 
 ## Class B — local fact (keep; verify accuracy)
 | Line | Rule | Still accurate? |
@@ -136,9 +148,10 @@ Findings are specific to this combination and should be re-run after either chan
 default, sections that would be better as a separate skill loaded on demand.>
 ```
 
-Stamping the version and model matters more than it looks. A finding of "this
-rule appears redundant" is a statement about one harness build, and an undated
-report will be reused long after it stopped being true.
+Stamping the Claude Code version, model, and effort matters more than it looks. A
+finding of "this rule appears redundant" is a statement about one runtime
+configuration, and an undated report will be reused long after it stopped being
+true.
 
 Present the report in the conversation. Write it to a file only if the user asks,
 and say which path you would use before doing it.

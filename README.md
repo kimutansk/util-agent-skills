@@ -44,8 +44,16 @@ against irreversible outcomes that stay regardless.
 The intent is to make an ablation pass affordable by shrinking what needs
 testing. The skill declares a read-only operating contract: its instructions
 say to read and report without modifying files, and `allowed-tools` pre-approves
-only `Read Grep Glob`. This is an explicit instruction and permission posture,
-not a mechanically enforced sandbox or deny-list.
+only `Read Grep Glob` and the exact `Bash(claude --version)` command used for the
+report stamp. This is an explicit instruction and permission posture, not a
+mechanically enforced sandbox or deny-list.
+
+Invoke it with the model identifier shown by `/status`, followed by an optional
+target:
+
+```text
+/claude-md-audit <model-id> [path-to-file]
+```
 
 ## Conventions for skills in this repo
 

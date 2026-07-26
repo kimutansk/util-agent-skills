@@ -55,9 +55,14 @@ finding about the harness.
 
 ## Rules about the instruction file itself
 
-"Keep this file under 200 lines." "Add new conventions to the bottom." These
-govern maintenance rather than agent behaviour, and ablation says nothing useful
-about them. Report them under non-directive content with a note, not as rules.
+"Keep this file under 200 lines." "Add new conventions to the bottom." When
+addressed to the agent maintaining the instruction file, these are Class A
+conventions: an editing task can expose whether they affect agent behaviour.
+Classify them normally and sketch a probe that asks the agent to modify the
+instruction file.
+
+Human-only maintenance notes that do not direct agent behaviour are
+non-directive content. Report them with the other human-facing material below.
 
 ## Meta-instructions aimed at the user
 
