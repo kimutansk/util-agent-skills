@@ -42,7 +42,10 @@ redundancy, local facts that cannot be inferred and should stay, and guards
 against irreversible outcomes that stay regardless.
 
 The intent is to make an ablation pass affordable by shrinking what needs
-testing. Read-only: it reads and reports, and does not modify the file.
+testing. The skill declares a read-only operating contract: its instructions
+say to read and report without modifying files, and `allowed-tools` pre-approves
+only `Read Grep Glob`. This is an explicit instruction and permission posture,
+not a mechanically enforced sandbox or deny-list.
 
 ## Conventions for skills in this repo
 
